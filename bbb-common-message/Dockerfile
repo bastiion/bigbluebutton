@@ -1,4 +1,4 @@
-FROM sbt:0.13.8
+FROM bigtruedata/sbt:latest
 
 ARG COMMON_VERSION
 
