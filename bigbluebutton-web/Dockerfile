@@ -2,15 +2,15 @@ FROM bbb-common-web AS builder
 
 RUN mkdir -p /root/tools \
  && cd /root/tools \
- && wget http://services.gradle.org/distributions/gradle-2.12-bin.zip \
- && unzip gradle-2.12-bin.zip \
- && ln -s gradle-2.12 gradle
+ && wget https://mirrors.cloud.tencent.com/gradle/gradle-3.5-bin.zip \
+ && unzip gradle-3.5-bin.zip \
+ && ln -s gradle-3.5 gradle
 
 RUN mkdir -p /root/tools \
  && cd /root/tools \
- && wget https://github.com/grails/grails-core/releases/download/v2.5.2/grails-2.5.2.zip \
- && unzip grails-2.5.2.zip \
- && ln -s grails-2.5.2 grails
+ && wget https://github.com/grails/grails-core/releases/download/v3.3.8/grails-3.3.8.zip \
+ && unzip grails-3.3.8.zip \
+ && ln -s grails-3.3.8 grails
 
 ENV PATH="/root/tools/gradle/bin:/root/tools/grails/bin:${PATH}"
 
@@ -19,8 +19,12 @@ ARG COMMON_VERSION=0.0.1-SNAPSHOT
 COPY . /source
 
 RUN cd /source \
- && find -name build.gradle -exec sed -i "s|\(.*org.bigbluebutton.*bbb-common-message[^:]*\):.*|\1:$COMMON_VERSION'|g" {} \; \
- && find -name build.gradle -exec sed -i "s|\(.*org.bigbluebutton.*bbb-common-web[^:]*\):.*|\1:$COMMON_VERSION'|g" {} \;
+ && find -name build.gradle -exec sed -i "s|\(.*org.bigbluebutton.*bbb-common-message[^:]*\):.*|\1:$COMMON_VERSIONr\"|g" {} \; \
+ && find -name build.gradle -exec sed -i "s|\(.*org.bigbluebutton.*bbb-common-web[^:]*\):.*|\1:$COMMON_VERSION\"|g" {} \;
+
+RUN mkdir -p ~/.m2/repository/cglib/cglib-nodep/2.2.2 \                                                                                                          
+ && cd ~/.m2/repository/cglib/cglib-nodep/2.2.2 \                                                                                                                
+ && wget https://repo.grails.org/grails/core/cglib/cglib-nodep/2.2.2/cglib-nodep-2.2.2.jar
 
 RUN cd /source \
  && gradle resolveDeps \
@@ -38,7 +42,7 @@ RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSI
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update \
  && apt-get -y install imagemagick xpdf-utils netcat libreoffice ttf-liberation fonts-crosextra-carlito fonts-crosextra-caladea unzip procps \
- && wget http://ftp.us.debian.org/debian/pool/main/libj/libjpeg8/libjpeg8_8d-1+deb7u1_amd64.deb \
+ && wget https://cloudfront.debian.net/debian-archive/debian/pool/main/libj/libjpeg8/libjpeg8_8d-1+deb7u1_amd64.deb \
  && dpkg -i libjpeg8*.deb \
  && rm libjpeg8*.deb
 
@@ -50,7 +54,7 @@ RUN echo "deb http://ubuntu.bigbluebutton.org/xenial-200-dev bigbluebutton-xenia
 # clean default webapps
 RUN rm -r webapps/*
 
-COPY --from=builder /source/target/bigbluebutton-0.9.0.war webapps/bigbluebutton.war
+COPY --from=builder /source/build/libs/bigbluebutton-0.10.0.war webapps/bigbluebutton.war
 
 RUN unzip -q webapps/bigbluebutton.war -d webapps/bigbluebutton \
  && rm webapps/bigbluebutton.war
