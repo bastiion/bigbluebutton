@@ -15,7 +15,8 @@ RUN apt-get update \
 RUN cd /source \
  && sbt debian:packageBin
 
-FROM openjdk:8-jre-slim-stretch
+#FROM openjdk:8-jre-slim-stretch
+FROM bbb-apps-akka
 
 COPY --from=builder /source/target/*.deb /root/
 
@@ -23,4 +24,6 @@ RUN dpkg -i /root/*.deb
 
 COPY wait-for-it.sh /usr/local/bin/
 
-CMD ["/usr/share/bbb-fsesl-akka/bin/bbb-fsesl-akka"]
+WORKDIR "/usr/share/bbb-fsesl-akka/"
+
+CMD ["bin/bbb-fsesl-akka"]
