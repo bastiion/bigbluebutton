@@ -24,4 +24,6 @@ RUN apt-get update \
 
 RUN dpkg -i /root/*.deb
 
-CMD ["/usr/share/bbb-apps-akka/bin/bbb-apps-akka"]
+WORKDIR "/usr/share/bbb-apps-akka/"
+
+CMD ["bin/bbb-apps-akka"]
