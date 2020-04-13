@@ -1,4 +1,4 @@
-FROM node:8
+FROM node:12
 
 RUN set -x \
  && curl -sL https://install.meteor.com | sed s/--progress-bar/-sL/g | /bin/sh \
