@@ -25,18 +25,18 @@ with BigBlueButton; if not, see <http://www.gnu.org/licenses/>.
             ">
 
     <bean id="stun1" class="org.bigbluebutton.web.services.turn.StunServer">
-        <constructor-arg index="0" value="stun:{{ .Env.TURN_DOMAIN }}:3478"/>
+        <constructor-arg index="0" value="stun:turn.{{ .Env.TURN_DOMAIN }}:3478"/>
     </bean>
 
     <bean id="turn1" class="org.bigbluebutton.web.services.turn.TurnServer">
         <constructor-arg index="0" value="{{ .Env.TURN_SECRET }}"/>
-        <constructor-arg index="1" value="turn:{{ .Env.TURN_DOMAIN }}:3478"/>
+        <constructor-arg index="1" value="turn:turn.{{ .Env.TURN_DOMAIN }}"/>
         <constructor-arg index="2" value="86400"/>
     </bean>
 
     <bean id="turn2" class="org.bigbluebutton.web.services.turn.TurnServer">
         <constructor-arg index="0" value="{{ .Env.TURN_SECRET }}"/>
-        <constructor-arg index="1" value="turn:{{ .Env.TURN_DOMAIN }}:3478?transport=tcp"/>
+        <constructor-arg index="1" value="turn:turn.{{ .Env.TURN_DOMAIN }}?transport=tcp"/>
         <constructor-arg index="2" value="86400"/>
     </bean>
 
