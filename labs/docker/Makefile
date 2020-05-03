@@ -30,6 +30,18 @@ image:
 		fi \
 	fi
 
+push:
+    if [ "$(IMAGE_ACCOUNT)" != "" ]; then \
+        docker push $(IMAGE_ACCOUNT)/$(IMAGE_NAME):$(IMAGE_TAG); \
+        if [ "$(TAG_REVISION)" == "1" ]; then \
+            docker push $(IMAGE_ACCOUNT)/$(IMAGE_NAME)-$(BUILD_REVISION); \
+        fi \
+    else \
+        if [ "$(TAG_REVISION)" == "1" ]; then \
+            docker push $(IMAGE_NAME):$(BUILD_REVISION); \
+        fi \
+    fi \
+
 release:
 	make image DIR=${BUILD_DIR_BASE}/labs/docker/sbt IMAGE_NAME=sbt IMAGE_TAG=0.13.8 BUILD_IMAGE=1
 	make image DIR=${BUILD_DIR_BASE}/bbb-common-message IMAGE_NAME=bbb-common-message BUILD_ARGS="--build-arg COMMON_VERSION=0.0.1-SNAPSHOT" BUILD_IMAGE=1
@@ -46,6 +58,19 @@ release:
 	make image DIR=${BUILD_DIR_BASE}/labs/docker/nginx IMAGE_NAME=bbb-nginx
 	make image DIR=${BUILD_DIR_BASE}/labs/docker/coturn IMAGE_NAME=bbb-coturn
 	make image DIR=${BUILD_DIR_BASE}/bbb-lti IMAGE_NAME=bbb-lti
+
+pushAll:
+	make push IMAGE_NAME=bbb-apps-akka BUILD_ARGS="--build-arg COMMON_VERSION=0.0.20-SNAPSHOT"
+	make push IMAGE_NAME=bbb-fsesl-akka BUILD_ARGS="--build-arg COMMON_VERSION=0.0.1-SNAPSHOT"
+	make push IMAGE_NAME=bbb-web BUILD_ARGS="--build-arg COMMON_VERSION=0.0.20-SNAPSHOT"
+	make push IMAGE_NAME=bbb-html5
+	make push IMAGE_NAME=bbb-webrtc-sfu
+	make push IMAGE_NAME=bbb-webhooks
+	make push IMAGE_NAME=bbb-kurento
+	make push IMAGE_NAME=bbb-freeswitch
+	make push IMAGE_NAME=bbb-nginx
+	make push IMAGE_NAME=bbb-coturn
+	make push IMAGE_NAME=bbb-lti
 
 important:
 	make image DIR=${BUILD_DIR_BASE}/bbb-common-message IMAGE_NAME=bbb-common-message BUILD_ARGS="--build-arg COMMON_VERSION=0.0.1-SNAPSHOT" BUILD_IMAGE=1
