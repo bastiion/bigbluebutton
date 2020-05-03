@@ -19,28 +19,28 @@ image:
 	-cd $(DIR) && docker build -t $(IMAGE_NAME):$(IMAGE_TAG) $(BUILD_ARGS) .
 	if [ "$(BUILD_IMAGE)" == "0" ]; then \
 		if [ "$(IMAGE_ACCOUNT)" != "" ]; then \
-            docker tag $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_ACCOUNT)/$(IMAGE_NAME):$(IMAGE_TAG); \
-            if [ "$(TAG_REVISION)" == "1" ]; then \
-                docker tag $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_ACCOUNT)/$(IMAGE_NAME)-$(BUILD_REVISION); \
-            fi \
+			docker tag $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_ACCOUNT)/$(IMAGE_NAME):$(IMAGE_TAG); \
+			if [ "$(TAG_REVISION)" == "1" ]; then \
+				docker tag $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_ACCOUNT)/$(IMAGE_NAME)-$(BUILD_REVISION); \
+			fi \
 		else \
-            if [ "$(TAG_REVISION)" == "1" ]; then \
-                docker tag $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_NAME):$(BUILD_REVISION); \
-            fi \
+			if [ "$(TAG_REVISION)" == "1" ]; then \
+				docker tag $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_NAME):$(BUILD_REVISION); \
+			fi \
 		fi \
 	fi
 
 push:
-    if [ "$(IMAGE_ACCOUNT)" != "" ]; then \
-        docker push $(IMAGE_ACCOUNT)/$(IMAGE_NAME):$(IMAGE_TAG); \
-        if [ "$(TAG_REVISION)" == "1" ]; then \
-            docker push $(IMAGE_ACCOUNT)/$(IMAGE_NAME)-$(BUILD_REVISION); \
-        fi \
-    else \
-        if [ "$(TAG_REVISION)" == "1" ]; then \
-            docker push $(IMAGE_NAME):$(BUILD_REVISION); \
-        fi \
-    fi \
+	if [ "$(IMAGE_ACCOUNT)" != "" ]; then \
+		docker push $(IMAGE_ACCOUNT)/$(IMAGE_NAME):$(IMAGE_TAG); \
+		if [ "$(TAG_REVISION)" == "1" ]; then \
+			docker push $(IMAGE_ACCOUNT)/$(IMAGE_NAME)-$(BUILD_REVISION); \
+		fi \
+	else \
+		if [ "$(TAG_REVISION)" == "1" ]; then \
+			docker push $(IMAGE_NAME):$(BUILD_REVISION); \
+		fi \
+	fi
 
 release:
 	make image DIR=${BUILD_DIR_BASE}/labs/docker/sbt IMAGE_NAME=sbt IMAGE_TAG=0.13.8 BUILD_IMAGE=1
