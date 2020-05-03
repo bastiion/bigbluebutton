@@ -1,8 +1,4 @@
-FROM node:8
-
-RUN set -x \
- && curl -sL https://install.meteor.com | sed s/--progress-bar/-sL/g | /bin/sh \
- && useradd -m -G users -s /bin/bash meteor
+FROM geoffreybooth/meteor-base:1.8
 
 RUN apt-get update && apt-get -y install jq
 
@@ -10,11 +6,7 @@ COPY . /source
 
 RUN cd /source \
  && mv docker-entrypoint.sh /usr/local/bin/ \
- && chown -R meteor:meteor . \
- && mkdir /app \
- && chown -R meteor:meteor /app
-
-USER meteor
+ && mkdir /app 
 
 RUN cd /source \
  && meteor npm install \
@@ -23,8 +15,8 @@ RUN cd /source \
 ENV NODE_ENV production
 
 RUN cd /app/bundle/programs/server \
- && npm install \
- && npm cache clear --force
+ && meteor npm install \
+ && meteor npm cache clear --force
 
 WORKDIR /app/bundle
 
