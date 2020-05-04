@@ -21,8 +21,10 @@ services:
       REDIS_HOST: redis
       ROOT_URL: http://127.0.0.1/html5client
     labels:
-      - "traefik.backend=bbb-html5"
-      - "traefik.frontend.rule=PathPrefix: /html5client,/_timesync"
+      - "traefik.http.routers.bbb-html5.entrypoints=websecure"
+      - "traefik.http.routers.bbb-html5.tls=true"
+      - "traefik.http.routers.bbb-html5.tls.certresolver=leresolver"
+      - "traefik.http.routers.bbb-html5.rule=PathPrefix(`/html5client`) || PathPrefix(`/_timesync`)"
 
   bbb-webhooks:
     image: ${TAG_PREFIX}bbb-webhooks${TAG_SUFFIX}
@@ -35,8 +37,10 @@ services:
       BEARER_AUTH: 1
       SERVER_DOMAIN: ${SERVER_DOMAIN}
     labels:
-      - "traefik.backend=bbb-webhooks"
-      - "traefik.frontend.rule=PathPrefix: /bigbluebutton/api/hooks"
+      - "traefik.http.routers.bbb-webhooks.entrypoints=websecure"
+      - "traefik.http.routers.bbb-webhooks.tls=true"
+      - "traefik.http.routers.bbb-webhooks.tls.certresolver=leresolver"
+      - "traefik.http.routers.bbb-webhooks.rule=PathPrefix(`/bigbluebutton/api/hooks`)"
 
   bbb-freeswitch:
     image: ${TAG_PREFIX}bbb-freeswitch${TAG_SUFFIX}
@@ -47,7 +51,7 @@ services:
       - media-audio:/var/freeswitch/meetings
 
   bbb-webrtc-sfu:
-    image: ${TAG_PREFIX}bbb-webrtc-sfu${TAG_SUFFIX}
+    image: ${TAG_PREFIX}bbb-webrtc-sfu:latest
     restart: unless-stopped
     depends_on:
       - redis
@@ -60,8 +64,10 @@ services:
       FREESWITCH_IP: bbb-freeswitch
       LOG_LEVEL: debug
     labels:
-      - "traefik.backend=bbb-webrtc-sfu"
-      - "traefik.frontend.rule=PathPrefix: /bbb-webrtc-sfu"
+      - "traefik.http.routers.bbb-webrtc-sfu.entrypoints=websecure"
+      - "traefik.http.routers.bbb-webrtc-sfu.tls=true"
+      - "traefik.http.routers.bbb-webrtc-sfu.tls.certresolver=leresolver"
+      - "traefik.http.routers.bbb-webrtc-sfu.rule=PathPrefix(`/bbb-webrtc-sfu`)"
 
   coturn:
     image: ${TAG_PREFIX}bbb-coturn${TAG_SUFFIX}
@@ -111,14 +117,17 @@ services:
       - redis
     volumes:
       - bigbluebutton:/var/bigbluebutton
+    command: [ "dockerize", "-template", "turn-stun-servers.xml.tmpl:webapps/bigbluebutton/WEB-INF/classes/spring/turn-stun-servers.xml", "docker-entrypoint.sh" ]
     environment:
       SERVER_DOMAIN: ${SERVER_DOMAIN}
       SHARED_SECRET: ${SHARED_SECRET}
       TURN_DOMAIN: ${SERVER_DOMAIN}
       TURN_SECRET: ${COTURN_REST_SECRET}
     labels:
-      - "traefik.backend=bbb-web"
-      - "traefik.frontend.rule=PathPrefix: /bigbluebutton"
+      - "traefik.http.routers.bigbluebutton.entrypoints=websecure"
+      - "traefik.http.routers.bigbluebutton.tls=true"
+      - "traefik.http.routers.bigbluebutton.tls.certresolver=leresolver"
+      - "traefik.http.routers.bigbluebutton.rule=PathPrefix(`/bigbluebutton`)"
 
   bbb-greenlight:
     image: bigbluebutton/greenlight:v2
@@ -132,8 +141,10 @@ services:
       SECRET_KEY_BASE: ${SECRET_KEY_BASE}
       ALLOW_GREENLIGHT_ACCOUNTS: "true"
     labels:
-      - "traefik.backend=bbb-greenlight"
-      - "traefik.frontend.rule=PathPrefix: /b"
+      - "traefik.http.routers.greenlight.entrypoints=websecure"
+      - "traefik.http.routers.greenlight.tls=true"
+      - "traefik.http.routers.greenlight.tls.certresolver=leresolver"
+      - "traefik.http.routers.greenlight.rule=PathPrefix(`/b`)"
 
   # when we're able to setup traefik properly for wss, nginx is no longer needed
   nginx:
@@ -144,33 +155,40 @@ services:
     environment:
       SERVER_DOMAIN: ${SERVER_DOMAIN}
     labels:
-      - "traefik.backend=bbb-freeswitch"
-      - "traefik.frontend.rule=PathPrefix: /ws"
+      - "traefik.http.routers.nginx.entrypoints=websecure"
+      - "traefik.http.routers.nginx.tls=true"
+      - "traefik.http.routers.nginx.tls.certresolver=leresolver"
+      - "traefik.http.routers.nginx.rule=PathPrefix(`/ws`)"
 
   traefik:
-    image: traefik
+    image: traefik:v2.0
     restart: unless-stopped
     ports:
       - 80:80
       - 8080:8080
       - 443:443
-    command: traefik
-      - --docker
-      - --logLevel=INFO
-      - --acme
-      - --acme.httpchallenge
-      - --acme.httpchallenge.entrypoint=http
-      - --acme.acmelogging
-      - --acme.storage=/etc/traefik/acme/acme.json
-      - --acme.email=felipe@mconf.com
-      - --acme.entrypoint=https
-      - --acme.domains=${SERVER_DOMAIN}
-      - --defaultentrypoints=http,https
-      - --entryPoints='Name:http Address::80 Redirect.EntryPoint:https'
-      - --entryPoints='Name:https Address::443 TLS'
+    command:
+      - --api
+      - --api.insecure=true
+      - --providers.docker
+      - --log.level=DEBUG
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --certificatesresolvers.leresolver.acme.httpchallenge=true
+      - --certificatesresolvers.leresolver.acme.httpchallenge.entrypoint=http
+      - --certificatesresolvers.leresolver.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory
+      - --certificatesresolvers.leresolver.acme.email=hxwvplovmczz@opayq.com
+      - --certificatesresolvers.leresolver.acme.storage=/etc/traefik/acme/acme.json
     volumes:
       - traefik-acme:/etc/traefik/acme/
-      - /var/run/docker.sock:/var/run/docker.sock
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    labels:
+      # global redirect to https
+      - "traefik.http.routers.http-catchall.rule=hostregexp(`{host:.+}`)"
+      - "traefik.http.routers.http-catchall.entrypoints=web"
+      - "traefik.http.routers.http-catchall.middlewares=redirect-to-https"
+      # middleware redirect
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
 
 volumes:
   traefik-acme:
