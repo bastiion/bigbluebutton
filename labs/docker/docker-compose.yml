@@ -24,7 +24,7 @@ services:
       - "traefik.http.routers.bbb-html5.entrypoints=websecure"
       - "traefik.http.routers.bbb-html5.tls=true"
       - "traefik.http.routers.bbb-html5.tls.certresolver=leresolver"
-      - "traefik.http.routers.bbb-html5.rule=PathPrefix(`/html5client`) || PathPrefix(`/_timesync`)"
+      - "traefik.http.routers.bbb-html5.rule=(Host(`${SERVER_DOMAIN}`) && PathPrefix(`/html5client`)) || (Host(`${SERVER_DOMAIN}`) && PathPrefix(`/_timesync`))"
 
   bbb-webhooks:
     image: ${TAG_PREFIX}bbb-webhooks${TAG_SUFFIX}
@@ -40,7 +40,7 @@ services:
       - "traefik.http.routers.bbb-webhooks.entrypoints=websecure"
       - "traefik.http.routers.bbb-webhooks.tls=true"
       - "traefik.http.routers.bbb-webhooks.tls.certresolver=leresolver"
-      - "traefik.http.routers.bbb-webhooks.rule=PathPrefix(`/bigbluebutton/api/hooks`)"
+      - "traefik.http.routers.bbb-webhooks.rule=Host(`${SERVER_DOMAIN}`) && PathPrefix(`/bigbluebutton/api/hooks`)"
 
   bbb-freeswitch:
     image: ${TAG_PREFIX}bbb-freeswitch${TAG_SUFFIX}
@@ -67,7 +67,7 @@ services:
       - "traefik.http.routers.bbb-webrtc-sfu.entrypoints=websecure"
       - "traefik.http.routers.bbb-webrtc-sfu.tls=true"
       - "traefik.http.routers.bbb-webrtc-sfu.tls.certresolver=leresolver"
-      - "traefik.http.routers.bbb-webrtc-sfu.rule=PathPrefix(`/bbb-webrtc-sfu`)"
+      - "traefik.http.routers.bbb-webrtc-sfu.rule=Host(`${SERVER_DOMAIN}`) && PathPrefix(`/bbb-webrtc-sfu`)"
 
   coturn:
     image: ${TAG_PREFIX}bbb-coturn${TAG_SUFFIX}
@@ -111,13 +111,15 @@ services:
       JAVA_OPTS: -Dredis.host=redis -Dfreeswitch.esl.host=bbb-freeswitch
 
   bbb-web:
-    image: ${TAG_PREFIX}bbb-web${TAG_SUFFIX}
+   #image: ${TAG_PREFIX}bbb-web${TAG_SUFFIX}
+    image: bastilion/bbb-web-pre:2.2.5_3
     restart: unless-stopped
     depends_on:
       - redis
     volumes:
       - bigbluebutton:/var/bigbluebutton
-    command: [ "dockerize", "-template", "turn-stun-servers.xml.tmpl:webapps/bigbluebutton/WEB-INF/classes/spring/turn-stun-servers.xml", "docker-entrypoint.sh" ]
+      - ./bigbluebutton.properties:/var/lib/tomcat7/webapps/bigbluebutton/WEB-INF/classes/bigbluebutton.properties
+    command: [ "dockerize", "-template", "turn-stun-servers.xml.tmpl:/var/lib/tomcat7/webapps/bigbluebutton/WEB-INF/spring/turn-stun-servers.xml", "/docker-entrypoint.sh" ]
     environment:
       SERVER_DOMAIN: ${SERVER_DOMAIN}
       SHARED_SECRET: ${SHARED_SECRET}
@@ -127,7 +129,7 @@ services:
       - "traefik.http.routers.bigbluebutton.entrypoints=websecure"
       - "traefik.http.routers.bigbluebutton.tls=true"
       - "traefik.http.routers.bigbluebutton.tls.certresolver=leresolver"
-      - "traefik.http.routers.bigbluebutton.rule=PathPrefix(`/bigbluebutton`)"
+      - "traefik.http.routers.bigbluebutton.rule=Host(`${SERVER_DOMAIN}`) && PathPrefix(`/bigbluebutton`)"
 
   bbb-greenlight:
     image: bigbluebutton/greenlight:v2
@@ -144,7 +146,7 @@ services:
       - "traefik.http.routers.greenlight.entrypoints=websecure"
       - "traefik.http.routers.greenlight.tls=true"
       - "traefik.http.routers.greenlight.tls.certresolver=leresolver"
-      - "traefik.http.routers.greenlight.rule=PathPrefix(`/b`)"
+      - "traefik.http.routers.greenlight.rule=Host(`${SERVER_DOMAIN}`) && PathPrefix(`/b`)"
 
   # when we're able to setup traefik properly for wss, nginx is no longer needed
   nginx:
@@ -158,7 +160,7 @@ services:
       - "traefik.http.routers.nginx.entrypoints=websecure"
       - "traefik.http.routers.nginx.tls=true"
       - "traefik.http.routers.nginx.tls.certresolver=leresolver"
-      - "traefik.http.routers.nginx.rule=PathPrefix(`/ws`)"
+      - "traefik.http.routers.nginx.rule=Host(`${SERVER_DOMAIN}`) && PathPrefix(`/ws`)"
 
   traefik:
     image: traefik:v2.0
@@ -174,21 +176,22 @@ services:
       - --log.level=DEBUG
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
-      - --certificatesresolvers.leresolver.acme.httpchallenge=true
-      - --certificatesresolvers.leresolver.acme.httpchallenge.entrypoint=http
-      - --certificatesresolvers.leresolver.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory
+      - --certificatesresolvers.leresolver.acme.tlschallenge=true
+        #- --certificatesresolvers.leresolver.acme.httpchallenge=true
+        #- --certificatesresolvers.leresolver.acme.httpchallenge.entrypoint=http
+        #- --certificatesresolvers.leresolver.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory
       - --certificatesresolvers.leresolver.acme.email=hxwvplovmczz@opayq.com
       - --certificatesresolvers.leresolver.acme.storage=/etc/traefik/acme/acme.json
     volumes:
       - traefik-acme:/etc/traefik/acme/
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
-    labels:
+        #labels:
       # global redirect to https
-      - "traefik.http.routers.http-catchall.rule=hostregexp(`{host:.+}`)"
-      - "traefik.http.routers.http-catchall.entrypoints=web"
-      - "traefik.http.routers.http-catchall.middlewares=redirect-to-https"
+      #- "traefik.http.routers.http-catchall.rule=hostregexp(`{host:.+}`)"
+      #- "traefik.http.routers.http-catchall.entrypoints=web"
+      #- "traefik.http.routers.http-catchall.middlewares=redirect-to-https"
       # middleware redirect
-      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      #- "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
 
 volumes:
   traefik-acme:
