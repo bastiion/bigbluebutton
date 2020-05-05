@@ -10,16 +10,22 @@ services:
     restart: unless-stopped
 
   bbb-html5:
-    image: ${TAG_PREFIX}bbb-html5${TAG_SUFFIX}
+    #image: ${TAG_PREFIX}bbb-html5${TAG_SUFFIX}
+    image: bastilion/bbb-html5-pre:2.2.5_0
     restart: unless-stopped
     depends_on:
       - mongo
       - redis
     environment:
+      PORT: 3000
       MONGO_URL: mongodb://mongo/bbbhtml5
-      METEOR_SETTINGS_MODIFIER: ".public.kurento.wsUrl = \"wss://${SERVER_DOMAIN}/bbb-webrtc-sfu\" | .public.kurento.enableVideo = true | .public.kurento.enableScreensharing = true | .public.kurento.chromeDefaultExtensionKey = \"${SCREENSHARE_EXTENSION_KEY}\" | .public.kurento.chromeDefaultExtensionLink = \"${SCREENSHARE_EXTENSION_LINK}\" | .public.kurento.enableVideoStats = true | .public.kurento.enableListenOnly = true"
+      KURENTO_WS_URL: wss://${SERVER_DOMAIN}/bbb-webrtc-sfu
+      #      METEOR_SETTINGS_MODIFIER: ".public.kurento.wsUrl = \"wss://${SERVER_DOMAIN}/bbb-webrtc-sfu\" | .public.kurento.enableVideo = true | .public.kurento.enableScreensharing = true | .public.kurento.chromeDefaultExtensionKey = \"${SCREENSHARE_EXTENSION_KEY}\" | .public.kurento.chromeDefaultExtensionLink = \"${SCREENSHARE_EXTENSION_LINK}\" | .public.kurento.enableVideoStats = true | .public.kurento.enableListenOnly = true"
+      KURENTO_EXTENSION_KEY: ${SCREENSHARE_EXTENSION_KEY}
+      KURENTO_EXTENSION_LINK: ${SCREENSHARE_EXTENSION_LINK}
       REDIS_HOST: redis
       ROOT_URL: http://127.0.0.1/html5client
+    command: [ "dockerize", "-template", "./settings-production.json.tmpl:/usr/share/meteor/bundle/programs/server/assets/app/config/settings-production.json", "node", "main.js" ]
     labels:
       - "traefik.http.routers.bbb-html5.entrypoints=websecure"
       - "traefik.http.routers.bbb-html5.tls=true"
